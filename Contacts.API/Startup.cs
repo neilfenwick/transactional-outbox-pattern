@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi;
 
@@ -41,22 +42,28 @@ public class Startup
                 IgnoreNullValues = true
             }
         };
-        var containers = new List<(string, string)>
-        {
-            (Configuration.GetSection("Cosmos")["Db"], Configuration.GetSection("Cosmos")["Container"])
-        };
-        var cosmosClient = CosmosClient.CreateAndInitializeAsync(Configuration.GetSection("Cosmos")["Url"],
-            Configuration.GetSection("Cosmos")["Key"], containers, cOpts).Result;
 
-        var container = cosmosClient.GetContainer(Configuration.GetSection("Cosmos")["Db"],
-            Configuration.GetSection("Cosmos")["Container"]);
+        services.TryAddSingleton(sp =>
+        {
+            var containers = new List<(string, string)>
+                {
+            (Configuration.GetSection("Cosmos")["Db"], Configuration.GetSection("Cosmos")["Container"])
+                };
+            var cosmosClient = CosmosClient.CreateAndInitializeAsync(Configuration.GetSection("Cosmos")["Url"],
+                Configuration.GetSection("Cosmos")["Key"], containers, cOpts).Result;
+
+            var container = cosmosClient.GetContainer(Configuration.GetSection("Cosmos")["Db"],
+                Configuration.GetSection("Cosmos")["Container"]);
+
+            return container;
+        });
 
         ContactPartitionKeyProvider partitionKeyProvider = new();
 
         services.AddAutoMapper(cfg => { }, typeof(ContactsProfile));
         services.AddValidatorsFromAssembly(typeof(CreateContactCommandValidator).Assembly);
 
-        services.AddSingleton(container)
+        services
             .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>))
             .AddSingleton<IContactPartitionKeyProvider>(partitionKeyProvider)
             .AddScoped<IContainerContext, CosmosContainerContext>()
