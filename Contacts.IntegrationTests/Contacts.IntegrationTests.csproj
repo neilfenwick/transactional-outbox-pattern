@@ -5,9 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <!-- Force self-contained to bundle ASP.NET Core runtime if missing on host -->
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
